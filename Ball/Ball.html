@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<title>Ball Animation</title>
+	<style type="text/css">
+		* { margin : 0; padding : 0; }
+		canvas { background : #eee; display : block; margin : 0 auto; }
+	</style>
+</head>
+<body>
+
+<canvas id="myCanvas" width="480" height="320"></canvas>
+
+<script type="text/javascript">	
+	/**
+	 * Shape - super class
+	 **/
+	var Shape = function () {
+		this.init = function (x,y) {
+			this.x = x;
+			this.y = y;
+			this.sx = this.sy = 1; // speed
+			this.canvas = null || document.getElementById("myCanvas");
+			if ( this.canvas && this.canvas.getContext ) {
+				this.ctx = this.canvas.getContext("2d");
+			}
+		};
+	};
+	
+	/**
+	 * Shape - super class method
+	 */
+	Shape.prototype.move = function (dx,dy) {
+		this.x += this.sx * dx;
+		this.y += this.sy * dy;
+	};
+	
+	/**
+	 * Ball - subclass of Shape
+	 * @params
+	 *		r : Radius
+	 */
+	var Ball = function (r) {
+		Shape.call(this); // call super constructor
+		this.r = r;
+	};
+	
+	/**
+	 * Subclass extends super class
+	 */
+	Ball.prototype = Object.create(Shape.prototype);
+	Ball.prototype.constructor = Ball;
+	
+	/**
+	 * Ball - subclass method(s)
+	 */
+	Ball.prototype.move = function (dx,dy) {
+		if ( this.x + this.r >= this.canvas.width || this.x - this.r < 0 )
+			this.sx = -this.sx;
+		if ( this.y + this.r >= this.canvas.height || this.y - this.r < 0 )
+			this.sy = -this.sy;
+		
+		Shape.prototype.move.call(this, dx, dy); // call super class method
+	};
+	
+	Ball.prototype.draw = function () {
+		this.ctx.beginPath();
+		this.ctx.arc(this.x, this.y, this.r, 0, 2*Math.PI, false);
+		this.ctx.fillStyle = "red";
+		this.ctx.fill();
+		this.ctx.closePath();
+	};
+	
+	Ball.prototype.render = function (vx,vy) {
+		if ( this.ctx ) {
+			this.ctx.clearRect(this.x - this.r, this.y - this.r, 2*this.r, 2*this.r);
+			this.move(vx,vy);
+			this.draw();
+		}
+	};
+	
+	/**
+	 * Main
+	 */
+	function __start__ () {
+		var b = new Ball(10);
+		b.init(b.r,140);
+		var animId = window.setInterval(function () { b.render(4,4); }, /* 60fps */ 16);	
+	}
+	
+	__start__();
+</script>
+
+</body>
+</html>
