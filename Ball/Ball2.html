@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<title>Ball Animation 2</title>
+	<style type="text/css">
+		* { margin : 0; padding : 0; }
+		canvas { background : #eee; display : block; margin : 0 auto; }
+	</style>
+</head>
+<body>
+
+<canvas id="myCanvas" width="480" height="320"></canvas>
+
+<script type="text/javascript">	 
+	/**
+	 * Shape - super class
+	 **/
+	var Shape = function () {
+		this.init = function (x, y, ctx, canvasHeight, canvasWidth) {
+			this.x = x;
+			this.y = y;
+			this.dx = this.dy = 1; // direction
+			this.speed = 0;
+			this.ctx = ctx; // canvas 2d context
+			this.canvasHeight = canvasHeight;
+			this.canvasWidth = canvasWidth;
+		};
+	};
+	
+	/**
+	 * Shape - super class method(s)
+	 */
+	Shape.prototype.move = function () {};
+	Shape.prototype.setSpeed = function (speed) {
+		this.speed = speed;
+	};
+	
+	/**
+	 * Ball - subclass of Shape
+	 * @params
+	 *		r : Radius
+	 */
+	var Ball = function (r) {
+		Shape.call(this); // call super constructor
+		this.r = r;
+	};
+	
+	/**
+	 * Subclass extends super class
+	 */
+	Ball.prototype = Object.create(Shape.prototype);
+	Ball.prototype.constructor = Ball;
+	
+	/**
+	 * Ball - subclass method(s)
+	 */
+	Ball.prototype.move = function () {
+		if ( this.x + this.r >= this.canvasWidth || this.x - this.r < 0 )
+			this.dx *= -1;
+		if ( this.y + this.r >= this.canvasHeight || this.y - this.r < 0 )
+			this.dy *= -1;
+		
+		// Shape.prototype.move.call(this, dx, dy); // call super class method
+		this.x += this.speed * this.dx;
+		this.y += this.speed * this.dy;
+	};
+	
+	Ball.prototype.draw = function () {
+		this.ctx.beginPath();
+		this.ctx.arc(this.x, this.y, this.r, 0, 2*Math.PI, false);
+		this.ctx.fillStyle = "red";
+		this.ctx.fill();
+		this.ctx.closePath();
+	};
+	
+	Ball.prototype.render = function () {
+		this.ctx.clearRect(this.x - this.r, this.y - this.r, 2*this.r, 2*this.r);
+		this.move();
+		this.draw();
+	};
+	
+	/**
+	 * Global variables
+	 */
+	var glob = {
+		ball : { radius : 10, start : { x : 230, y : 210 }	}
+	};
+	
+	/**
+	 * Game - super class
+	 */
+	var Game = function () {
+		this.init = function () {
+			this.canvas = null || document.getElementById("myCanvas");
+			if ( this.canvas && this.canvas.getContext ) {
+				this.ctx = this.canvas.getContext("2d");
+				this.ball = new Ball(glob.ball.radius);
+				this.ball.init(glob.ball.start.x, glob.ball.start.y, 
+							   this.ctx, this.canvas.height, this.canvas.width);
+				this.ball.setSpeed(4);
+				return true;
+			}
+			return false;
+		};
+		this.start = function () {
+			this.gameId = setInterval( Ball.prototype.render.bind(this.ball), 16 );
+		}
+		this.stop = function () {
+			clearInterval(this.gameId);
+		};
+	};
+	
+	/**
+	 * Main
+	 */	
+	function __start__ () {
+		var game = new Game();
+		if ( game.init() )	game.start();
+		//game.stop();
+	}
+	
+	__start__();
+</script>
+
+</body>
+</html>

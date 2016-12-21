@@ -72,10 +72,10 @@
 		this.ctx.closePath();
 	};
 	
-	Ball.prototype.render = function (vx,vy) {
+	Ball.prototype.render = function () {
 		if ( this.ctx ) {
 			this.ctx.clearRect(this.x - this.r, this.y - this.r, 2*this.r, 2*this.r);
-			this.move(vx,vy);
+			this.move(2,2);
 			this.draw();
 		}
 	};
@@ -85,8 +85,8 @@
 	 */
 	function __start__ () {
 		var b = new Ball(10);
-		b.init(b.r,140);
-		var animId = window.setInterval(function () { b.render(4,4); }, /* 60fps */ 16);	
+		b.init(b.r, 140);
+		var animId = window.setInterval(function () { b.render(); }, /* 60fps */ 16);	
 	}
 	
 	__start__();
