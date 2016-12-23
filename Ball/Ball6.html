@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="expires" content="0" />
+	<meta charset="utf-8" />
+	<title>Ball Animation 6</title>
+	<style type="text/css">
+		* { margin : 0; padding : 0; }
+		body { height : 100%; min-height : 100%; width : 100%; overflow-x : hidden; }
+		canvas { height : 100vh; /* Viewport-Percentage Length, 100vh = 100% viewport (window) height */ 
+		         background : #CED8F6; display : block; margin : 0 auto; }
+	</style>
+</head>
+<body>
+
+<canvas id="myCanvas"></canvas>
+
+<script type="text/javascript">
+	/**
+	 *
+	 */
+	/*
+	function getRandomNum(min, max) {
+		min = Math.ceil(min);
+		max = Math.floor(max);
+		return Math.floor(Math.random() * (max - min)) + min;
+	}*/
+	
+	/**
+	 * Global variables
+	 */
+	var glob = {
+		ball : { radius : 10, start : { x : 20, y : 210 } },
+		racket : { width : 140, height : 14 },
+	    key : { left : false, right : false },
+	};
+	
+	/**
+	 * Shape - super class
+	 **/
+	var Shape = function () {
+		this.init = function (x, y, ctx) {
+			this.x = x;
+			this.y = y;
+			this.speed = 0;
+			this.ctx = ctx; // canvas 2d context
+		};
+	};
+	
+	/**
+	 * Shape - super class method(s)
+	 */
+	Shape.prototype.setSpeed = function (speed) {
+		this.speed = speed;
+	};
+	
+	/**
+	 * Ball - subclass of Shape
+	 * @params radius
+	 */
+	var Ball = function () {
+		this.radius = glob.ball.radius;
+		this.color = "red";
+		this.dx = this.dy = -1; // direction
+		Shape.call(this); // call super constructor
+		// this.x and this.y are center point
+	};
+	
+	/**
+	 * Subclass extends super class
+	 */
+	Ball.prototype = Object.create(Shape.prototype);
+	Ball.prototype.constructor = Ball;
+	
+	/**
+	 * Ball - subclass method(s)
+	 */
+	Ball.prototype.move = function () {
+		var canvasWidth = this.ctx.canvas.width;
+		var canvasHeight = this.ctx.canvas.height;
+		
+		if ( this.x + this.radius >= canvasWidth || this.x - this.radius < 0 )
+			this.dx = -this.dx;
+		if ( /* this.y + this.radius >= canvasHeight || */ this.y - this.radius < 0 )
+			this.dy = -this.dy;
+		
+		// Shape.prototype.move.call(this, dx, dy); // call super class method
+		this.x += this.speed * this.dx;
+		this.y += this.speed * this.dy;
+	};
+	
+	Ball.prototype.draw = function () {
+		this.ctx.beginPath();
+		this.ctx.arc(this.x, this.y, this.radius, 0, 2*Math.PI, false);
+		this.ctx.fillStyle = this.color;
+		this.ctx.fill();
+		this.ctx.closePath();
+	};
+	
+	/**
+	 * Racket - subclass
+	 */
+	var Racket = function () {
+		this.width = glob.racket.width;
+		this.height = glob.racket.height;
+		this.color = "blue";
+		Shape.call(this); // call super constructor
+	};
+	
+	/**
+	 * Subclass Racket extends super class Shape
+	 */
+	Racket.prototype = Object.create(Shape.prototype);
+	Racket.prototype.constructor = Racket;
+	
+	Racket.prototype.move = function () {
+		var newX = this.x + this.speed;
+		if ( newX > 0 && (newX + this.width < this.ctx.canvas.width) )
+			this.x += this.speed;
+	};
+	
+	Racket.prototype.draw = function () {
+		this.ctx.beginPath(); 	 
+		this.ctx.fillStyle = this.color;
+		this.ctx.fillRect(this.x, this.y, this.width, this.height);
+		this.ctx.closePath();
+	};
+	
+	/**
+	 * Event handler(s)
+	 */
+	function keyDownEventHandler ( evt ) { // Use keydown instead of keypress for working with Chrome
+		var key = evt.key || evt.code; // evt.keyCode
+		if ( key === "ArrowLeft" ) glob.key.left = true;
+		else if ( key === "ArrowRight" ) glob.key.right = true;
+	}
+	
+	function keyUpEventHandler ( evt ) {
+		var key = evt.key || evt.code; // evt.keyCode
+		if ( key === "ArrowLeft" ) glob.key.left = false;
+		else if ( key === "ArrowRight" ) glob.key.right = false;
+	}
+	 
+	/**
+	 * Invokes animation rendering
+	 * @params game object
+	 */
+	function render (game) {
+		//var gameId = setInterval( Ball.prototype.render.bind(ball) }, /* 60 fps */ 16 );
+		var gameId = setInterval( () => { /* Arrow function */
+			game.ctx.clearRect(game.ball.x - game.ball.radius, game.ball.y - game.ball.radius, 
+								2 * game.ball.radius, 2 * game.ball.radius);
+			game.ctx.clearRect(game.racket.x, game.racket.y, game.racket.width, game.racket.height);
+			// Calculates the collision point of ball and racket.
+			// 45 (deg) = PI/4 (rad), sin(PI/4) = cos(PI/4) = 0.5 * sqrt(2) = 0.70710678118... =~ 0.71
+			if ( ( game.ball.x >= (game.racket.x - game.ball.radius) &&  
+				   game.ball.x <= (game.racket.x + game.racket.width + game.ball.radius) ) &&
+				 ( game.racket.y > game.ball.y && game.racket.y <= (game.ball.y + 0.71 * game.ball.radius) ) ) {
+				game.ball.dy = -game.ball.dy;
+			}
+			game.ball.move();
+			if ( game.ball.y + game.ball.radius >= game.canvas.height ) {
+				document.location.reload();
+			}
+			if ( glob.key.left || glob.key.right ) {
+				if ( glob.key.left && game.racket.speed > 0 || glob.key.right && game.racket.speed < 0 ) 
+					game.racket.speed = -game.racket.speed;
+				game.racket.move();
+				//glob.key.left = glob.key.right = false; // fehler: bremst die Smooth-Eigenschaft von Racket
+			}
+			game.ball.draw();
+			game.racket.draw();
+		}, /* 60 fps */ 16 );
+		return gameId;
+	}
+	
+	/**
+	 * Game - super class
+	 */
+	var Game = function () {
+		this.init = function () {
+			this.canvas = null || document.getElementById("myCanvas");
+			if ( !this.canvas ) document.body.innerHTML = "There is no canvas!";
+			// Add listeners
+			document.addEventListener("keydown", keyDownEventHandler, false); // keydown instead of keypress, since keypress is not detected with Chrome
+			document.addEventListener("keyup", keyUpEventHandler, false);	
+			// Set canvas' height and width
+			this.canvas.height = document.body.clientHeight;
+			this.canvas.width = document.body.clientWidth;
+			if ( this.canvas.getContext ) {
+				this.ctx = this.canvas.getContext("2d");
+				// Create Ball object
+				this.ball = new Ball();
+				this.ball.init(glob.ball.start.x, glob.ball.start.y, this.ctx);
+				this.ball.setSpeed(4);
+				// Create Racket object
+				this.racket = new Racket();
+				this.racket.init(Math.floor((this.canvas.width - this.racket.width) / 2), 
+								this.canvas.height - 2*this.racket.height, this.ctx);
+				this.racket.setSpeed(8);
+				// Returns
+				return true;
+			}
+			return false;
+		};
+		this.start = function () {
+			this.gameId = render( this );
+		};
+		this.stop = function () {
+			clearInterval(this.gameId);
+		};
+	};
+	
+	/**
+	 * Main
+	 */	
+	function __start__ () {
+		var game = new Game();
+		if ( game.init() )	game.start();
+		//game.stop();
+	}
+	
+	__start__();
+</script>
+
+</body>
+</html>
