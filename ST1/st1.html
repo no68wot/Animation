@@ -26,11 +26,8 @@
  	* Shape - super class
  	*/
 	var Shape = function () {
-		this.init = function (x,y,ctx) {
-			this.x = x; // middle point, x-Plotter
-			this.y = y; // middle point, y-Plotter
-			this.ctx = ctx; // 2d context
-		};
+		this.x = 0; // middle point, x-Plotter
+		this.y = 0; // middle point, y-Plotter
 	}; // Shape
 			
 	/**
@@ -60,10 +57,11 @@
 	 * Plotter - subclass of Shape
 	 */
 	var Plotter = function () {
-		this.axis = { /* length of two half-pieces of the x- and y-axis */
-			t : 50 /* top */, b : 50 /* bottom */, l : 50 /* left */, r : 50 /* right */ 
-		};
 		Shape.call(this);
+		// Length of x- and y-axis
+		this.axisX = this.axisY = 50; // default
+		// Length of the unit dashes
+		this.unitX = this.unitY = 10; // default 
 	}; // Plotter
 			
 	/**
@@ -76,16 +74,70 @@
 	 * Plotter - subclass method(s)
 	 */
 	Plotter.prototype.draw = function () {
+		if ( typeof this.ctx == 'undefined' || !this.ctx ) return;
 		this.ctx.beginPath();
-		this.ctx.moveTo(this.x - this.axis.l, this.y); // x-axis
-		this.ctx.lineTo(this.x + this.axis.r, this.y);
+		var x = this.x - (this.axisX / 2),
+			y = this.y - (this.axisY / 2);
+		/* Draw the x- and y-axis */
+		this.ctx.moveTo(x, this.y); // x-axis
+		this.ctx.lineTo(x + this.axisX, this.y);
 		this.ctx.stroke();
-		this.ctx.moveTo(this.x, this.y - this.axis.t); // y-axis
-		this.ctx.lineTo(this.x, this.y + this.axis.b);
+		this.ctx.moveTo(this.x, y); // y-axis
+		this.ctx.lineTo(this.x, y + this.axisY);
 		this.ctx.stroke();
+		/* Draw the unit dashes */
+		// Draw unit dashes on x-axis first
+		var step = this.x - this.unitX, 
+			cnt = 1, tmp = 0;
+		while ( step > x ) {
+			this.ctx.moveTo(step, this.y - 4);
+			this.ctx.lineTo(step, this.y + 4);
+			this.ctx.stroke();
+			tmp = step + 2 * cnt * this.unitX;
+			this.ctx.moveTo(tmp, this.y - 4);
+			this.ctx.lineTo(tmp, this.y + 4);
+			this.ctx.stroke();
+			step -= this.unitX;
+			cnt += 1;
+		}
+		// Draw unit dashes on y-axis 
+		step = this.y - this.unitY, 
+		cnt = 1;
+		while ( step > y ) {
+			this.ctx.moveTo(this.x - 4, step);
+			this.ctx.lineTo(this.x + 4, step);
+			this.ctx.stroke();
+			tmp = step + 2 * cnt * this.unitY;
+			this.ctx.moveTo(this.x - 4, tmp);
+			this.ctx.lineTo(this.x + 4, tmp);
+			this.ctx.stroke();
+			step -= this.unitX;
+			cnt += 1;
+		} 
 		this.ctx.closePath();
 	};
 	
+	Plotter.prototype.plot = function () {
+		// ToDo : Implements a parser for function expressions (string)
+		// Default is: f(x) := A*sin(x)
+		var x, fx, A, tmp; // A : Amplitude
+		tmp = this.axisX / 2;
+		x = this.x - tmp;
+		A = 1;
+		while ( x <= this.x + tmp) {
+			fx = A * this.unitY * Math.sin(x);
+			fx += this.y; // maps to current coordinate system
+			this.ctx.beginPath();
+			this.ctx.arc(x,fx,1,0, 2* Math.PI, false);
+			this.ctx.fill();
+			this.ctx.closePath();
+			x += 1;
+		}
+	};
+	
+	/**
+	 *
+	 */
 	function start () {
 		var canvas = null || document.getElementById("myCanvas");
 		if ( !canvas ) {
@@ -98,9 +150,16 @@
 		/* Get canvas rendering context */
 		if ( canvas.getContext ) {
 			var ctx = canvas.getContext('2d');
+			/* Initializes plotter object */
 			var plotter = new Plotter();
-			plotter.init(canvas.width / 2, canvas.height / 2, ctx);
+			plotter.x = canvas.width / 3;
+			plotter.y = canvas.height / 3;
+			plotter.axisX = plotter.axisY = canvas.height / 2;
+			plotter.unitX = Math.floor(plotter.axisX / 10);
+			plotter.unitY = Math.floor(plotter.axisY / 10);
+			plotter.ctx = ctx;
 			plotter.draw();
+			plotter.plot();
 		}
 	}
 	
